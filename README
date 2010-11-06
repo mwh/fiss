@@ -1,0 +1,52 @@
+fiss, the inotify file server synchroniser
+
+fiss monitors a directory tree and pushes changed files out to a server
+after a delay. The program has two main purposes: to automate remote
+backups, and to push changes to a local copy immediately to the server
+during web development.
+
+The basic usage is:
+  fiss /local/path server:destpath/
+By default, fiss will push a changed file if it has not changed again
+for 60 seconds, or if it changed more than five minutes ago and hasn't
+been synchronised since then. The -d N and -D N options change these
+respectively. A value of zero will cause immediate push, which is what
+you want for the web development case.
+
+fiss supports multiple synchronisation mechanisms. The default is rsync,
+and dest is passed as-is to the rsync client, and scp is available with
+the --scp option. There is also the ability to trigger a custom command:
+with --custom, the destination is treated as a pattern for a shell
+command invocation (with system). An instance of "#p" in the pattern
+will be replaced with the changed file's path.
+
+Neither rsync nor scp supports deleting individual files, so fiss also
+provides a --delete-cmd CMD option. The CMD is run with system and
+subject to the same expansion as a custom command, with the following
+expansions:
+ #p   local file path
+ #d   destination as given
+ #h   part of destination before first :
+ #r   part of destination after first :
+Each deleted file is processed individually. The --delete option must be
+passed to enable file deletion for a destination (--no-delete to
+disable).
+
+File paths can be skipped by glob patterns given with the --skip option.
+Each --skip is checked with fnmatch(2) for each path, and any matches
+are not processed further. The default configuration skips files that
+look like editor backups, matching *~ or #*#. Use --clear-skips to erase
+the list of skipped patterns.
+
+Multiple destinations can be provided. Each inherits the settings most
+recently given on the command line. Destinations may have different
+timeouts, types, commands, and skip settings.
+
+By default, fiss will fork into the background. Pass the -f option to
+keep it in the foreground and output descriptive data.
+
+fiss is distributed under the GNU GPL 3 or later (see LICENCE). It
+currently depends on inotify, which probably makes it Linux-only, but it
+should be possible to make it work with equivalent systems on other
+platforms (patches welcome!).
+
