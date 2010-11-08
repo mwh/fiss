@@ -302,7 +302,7 @@ void sync_rsync(struct destination *d) {
     int i = 0;
     strarray *com = strarray_create(files->num + 4);
     strarray_set(com, 0, "rsync");
-    strarray_set(com, 1, "-Ruxzq");
+    strarray_set(com, 1, "-Ruxzaq");
     for (i=0; i<files->num; i++) {
         if (debug && verbose)
             printf("  %s\n", strarray_get(files, i) + 2);
