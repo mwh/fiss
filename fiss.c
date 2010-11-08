@@ -362,7 +362,8 @@ void handled(struct destination *d) {
     if (!files->num)
         return;
     if (debug && verbose)
-        printf("fiss: will sync %i files to %s:\n", files->num, d->dest);
+        printf("fiss: will sync %i file%s to %s:\n", files->num,
+                (files->num==1?"":"s"), d->dest);
     if (d->type == S_RSYNC)
         sync_rsync(d);
     else if (d->type == S_SCP)
