@@ -70,6 +70,7 @@ struct destination {
     time_t deleted_time;
     int delete;
     char *delete_cmd;
+    char *sync_complete_cmd;
     struct destination *next;
 };
 
@@ -89,6 +90,7 @@ int help() {
     puts("--delete-cmd CMD	Use CMD as deletion command.");
     puts("--skip GLOB	\tSkip files matching GLOB.");
     puts("--clear-skips	\tClear the list of skipped patterns.");
+    puts("--sync-complete-cmd CMD\tExecute CMD after a completed sync.");
     puts("--help	\t\tThis help text.");
     puts("");
     puts("Monitors a directory tree for changes and synchronises modified");
@@ -373,6 +375,11 @@ void handled(struct destination *d) {
     else
         fprintf(stderr, "fiss: unknown desttype %i\n", d->type);
     strarray_clear(files);
+    if (strcmp(d->sync_complete_cmd, "") != 0) {
+        char cmd[1024];
+        fillpattern(cmd, strarray_get(files, 0), d->sync_complete_cmd, d);
+        system(cmd);
+    }
     if (debug && verbose)
         printf("done.\n");
 }
@@ -504,7 +511,8 @@ void start() {
 }
 
 void create_destination(int desttype, char *dest, int push_last_delay,
-        int push_first_delay, int delete, char *delete_cmd) {
+        int push_first_delay, int delete, char *delete_cmd,
+        char *sync_complete_cmd) {
     struct destination *nd = malloc(sizeof(struct destination));
     nd->type = desttype;
     nd->dest = dest;
@@ -515,6 +523,7 @@ void create_destination(int desttype, char *dest, int push_last_delay,
     nd->deleted_time = 0;
     nd->delete = delete;
     nd->delete_cmd = delete_cmd;
+    nd->sync_complete_cmd = sync_complete_cmd;
     nd->next = dests;
     dests = nd;
 }
@@ -535,6 +544,7 @@ int main(int argc, char **argv) {
     int push_first_delay = 300;
     int delete = 0;
     char *delete_cmd = "echo fiss: Deletion command unset, did not delete #d #p.";
+    char *sync_complete_cmd = "";
     char rundir[128] = "";
     int pid;
     skips = strarray_create(8);
@@ -574,6 +584,8 @@ int main(int argc, char **argv) {
             strarray_push(skips, argv[++i]);
         } else if (strcmp("--clear-skip", argv[i]) == 0) {
             strarray_clear(skips);
+        } else if (strcmp("--sync-complete-cmd", argv[i]) == 0) {
+            sync_complete_cmd = argv[++i];
         } else if (root == NULL) {
             root = argv[i];
             if (chdir(root)) {
@@ -582,8 +594,8 @@ int main(int argc, char **argv) {
             }
         } else {
             dest = argv[i];
-            create_destination(desttype, dest, push_last_delay, push_first_delay,
-                    delete, delete_cmd);
+            create_destination(desttype, dest, push_last_delay,
+                    push_first_delay, delete, delete_cmd, sync_complete_cmd);
         }
     }
     if (verbose) {
